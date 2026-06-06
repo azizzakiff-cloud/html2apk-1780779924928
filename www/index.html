@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML2APK — حوّل كودك إلى تطبيق</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --danger: #ef4444;
+    --glow: 0 0 40px rgba(0,229,255,0.15);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; opacity: 0.25; }
+  .orb-1 { width: 500px; height: 500px; background: #00e5ff; top: -150px; right: -150px; }
+  .orb-2 { width: 400px; height: 400px; background: #7c3aed; bottom: -100px; left: -100px; }
+  .orb-3 { width: 300px; height: 300px; background: #10b981; top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.1; }
+  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(10,12,16,0.8);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+  .nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: 900; letter-spacing: -0.5px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 0 20px rgba(0,229,255,0.4); }
+  .logo span { color: var(--accent); }
+  .nav-badge { background: linear-gradient(135deg, var(--accent2), var(--accent)); padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; }
+  .hero { text-align: center; padding: 100px 0 80px; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,229,255,0.07); border: 1px solid rgba(0,229,255,0.2); padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; color: var(--accent); margin-bottom: 28px; animation: fadeInDown 0.6s ease; }
+  .hero-badge::before { content: '●'; font-size: 0.5rem; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); font-weight: 900; line-height: 1.1; margin-bottom: 20px; animation: fadeInUp 0.7s ease 0.1s both; }
+  h1 .highlight { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-sub { font-size: 1.1rem; color: var(--text-muted); max-width: 500px; margin: 0 auto 40px; line-height: 1.7; animation: fadeInUp 0.7s ease 0.2s both; }
+  .hero-stats { display: flex; justify-content: center; gap: 40px; animation: fadeInUp 0.7s ease 0.3s both; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.8rem; font-weight: 900; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  .builder { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-bottom: 60px; box-shadow: var(--glow), 0 40px 80px rgba(0,0,0,0.5); animation: fadeInUp 0.8s ease 0.4s both; }
+  .tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 20px; gap: 4px; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-family: 'Cairo', sans-serif; font-size: 0.9rem; padding: 14px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .builder-body { padding: 32px; }
+  .step { display: none; }
+  .step.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  @keyframes fadeInDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 0.95rem; transition: border-color 0.2s, box-shadow 0.2s; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,0.1); }
+  select option { background: var(--surface2); }
+  .color-row { display: flex; align-items: center; gap: 10px; }
+  input[type="color"] { width: 48px; height: 48px; padding: 4px; cursor: pointer; border-radius: 10px; }
+  .token-box {
+    background: linear-gradient(135deg, rgba(0,229,255,0.04), rgba(124,58,237,0.04));
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 8px;
+  }
+  .token-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .token-icon { font-size: 1.3rem; }
+  .token-title { font-size: 0.95rem; font-weight: 700; }
+  .token-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+  .token-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .token-link:hover { text-decoration: underline; }
+  .token-input-row { display: flex; gap: 10px; }
+  #github-token { flex: 1; font-family: 'Fira Code', monospace; font-size: 0.85rem; letter-spacing: 1px; }
+  .btn-verify { background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3); color: var(--accent); padding: 12px 18px; border-radius: 10px; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: all 0.2s; }
+  .btn-verify:hover { background: rgba(0,229,255,0.2); }
+  .token-status { margin-top: 10px; font-size: 0.82rem; display: none; }
+  .token-status.ok { color: var(--accent3); display: flex; align-items: center; gap: 6px; }
+  .token-status.fail { color: var(--danger); display: flex; align-items: center; gap: 6px; }
+  .editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .editor-title { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .editor-actions { display: flex; gap: 8px; }
+  .btn-sm { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; transition: all 0.2s; font-family: 'Cairo', sans-serif; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .code-editor { background: #0d1117; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .code-editor-bar { background: #161b22; padding: 8px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; } .dot-y { background: #ffbd2e; } .dot-g { background: #28c840; }
+  .code-label { font-size: 0.75rem; color: var(--text-muted); margin-right: auto; font-family: 'Fira Code', monospace; }
+  #html-input { width: 100%; min-height: 300px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 0.9rem; line-height: 1.7; background: transparent; border: none; resize: vertical; color: #c9d1d9; tab-size: 2; }
+  #html-input::placeholder { color: #3d4451; }
+  .preview-frame { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 16px; }
+  .preview-bar { background: var(--surface2); padding: 8px 16px; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  #preview-iframe { width: 100%; height: 250px; border: none; background: white; }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .toggle-info { display: flex; flex-direction: column; }
+  .toggle-info strong { font-size: 0.9rem; }
+  .toggle-info span { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  .toggle { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 50px; cursor: pointer; transition: background 0.3s; flex-shrink: 0; }
+  .toggle.on { background: var(--accent3); }
+  .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 3px; right: 3px; transition: transform 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .toggle.on::after { transform: translateX(-20px); }
+  .build-center { text-align: center; padding: 20px 0 10px; }
+  .build-icon { width: 80px; height: 80px; background: linear-gradient(135deg, var(--accent2), var(--accent)); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 24px; box-shadow: 0 0 40px rgba(0,229,255,0.3); animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .build-summary { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin: 24px 0; text-align: right; }
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: var(--text-muted); }
+  .summary-val { font-weight: 600; color: var(--accent); }
+  .progress-wrap { margin: 24px 0; display: none; }
+  .progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.82rem; color: var(--text-muted); }
+  .progress-bar-bg { height: 8px; background: var(--border); border-radius: 50px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 50px; width: 0%; transition: width 0.4s ease; box-shadow: 0 0 10px rgba(0,229,255,0.5); }
+  .progress-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .prog-step { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; color: var(--text-muted); transition: color 0.3s; }
+  .prog-step.done { color: var(--accent3); }
+  .prog-step.active { color: var(--accent); }
+  .prog-dot { width: 20px; height: 20px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; transition: background 0.3s; }
+  .prog-step.done .prog-dot { background: var(--accent3); }
+  .prog-step.active .prog-dot { background: var(--accent); animation: pulse 1s infinite; }
+  .build-log {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 16px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: #8b949e;
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+    line-height: 1.6;
+  }
+  .build-log .log-ok { color: var(--accent3); }
+  .build-log .log-err { color: var(--danger); }
+  .build-log .log-info { color: var(--accent); }
+  .download-card { display: none; background: linear-gradient(135deg, rgba(0,229,255,0.07), rgba(124,58,237,0.07)); border: 1px solid rgba(0,229,255,0.3); border-radius: 16px; padding: 28px; text-align: center; margin-top: 20px; }
+  .download-card h3 { font-size: 1.3rem; margin-bottom: 8px; }
+  .download-card p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem; }
+  .repo-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.8rem; margin-top: 14px; text-decoration: none; transition: color 0.2s; }
+  .repo-link:hover { color: var(--accent); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: 12px; font-family: 'Cairo', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; box-shadow: 0 4px 20px rgba(0,229,255,0.25); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,229,255,0.35); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: linear-gradient(135deg, #059669, #10b981); color: white; font-size: 1rem; padding: 14px 32px; }
+  .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(16,185,129,0.3); }
+  .btn-build { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; font-size: 1.05rem; padding: 16px 40px; box-shadow: 0 4px 30px rgba(0,229,255,0.3); }
+  .btn-build:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,229,255,0.4); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  .step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .features { padding: 60px 0; }
+  .section-title { text-align: center; font-size: 1.8rem; font-weight: 900; margin-bottom: 12px; }
+  .section-sub { text-align: center; color: var(--text-muted); margin-bottom: 48px; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: transform 0.3s, border-color 0.3s; }
+  .feature-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.3); }
+  .feature-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 16px; }
+  .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+  .how { padding: 60px 0; }
+  .steps-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; position: relative; }
+  .steps-row::before { content: ''; position: absolute; top: 32px; right: 12.5%; left: 12.5%; height: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent)); opacity: 0.3; }
+  .how-step { text-align: center; padding: 20px 16px; }
+  .how-num { width: 64px; height: 64px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin: 0 auto 16px; position: relative; z-index: 1; transition: border-color 0.3s; }
+  .how-step:hover .how-num { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,229,255,0.2); }
+  .how-step h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+  .how-step p { font-size: 0.8rem; color: var(--text-muted); }
+  footer { border-top: 1px solid var(--border); padding: 32px 24px; text-align: center; color: var(--text-muted); font-size: 0.82rem; }
+  footer a { color: var(--accent); text-decoration: none; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); padding: 12px 24px; border-radius: 50px; font-size: 0.88rem; display: flex; align-items: center; gap: 8px; z-index: 1000; transition: transform 0.3s ease; box-shadow: 0 8px 30px rgba(0,0,0,0.4); white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent3); color: var(--accent3); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  @media (max-width: 768px) {
+    .form-grid, .settings-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .features-grid { grid-template-columns: 1fr; }
+    .steps-row { grid-template-columns: 1fr 1fr; }
+    .steps-row::before { display: none; }
+    .hero-stats { gap: 20px; }
+    h1 { font-size: 2rem; }
+    .token-input-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      HTML<span>2</span>APK
+    </div>
+    <div class="nav-badge">BETA</div>
+  </div>
+</nav>
+
+<div class="wrapper">
+  <section class="hero">
+    <div class="hero-badge">✦ محرّك تحويل ذكي وحقيقي عبر GitHub Actions</div>
+    <h1>حوّل كود <span class="highlight">HTML</span> إلى<br>تطبيق Android حقيقي</h1>
+    <p class="hero-sub">ضع كودك، اضبط الإعدادات، وحمّل ملف APK حقيقي مبني بـ Cordova خلال دقائق.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">مجاني تماماً</div></div>
+      <div class="stat"><div class="stat-num">APK</div><div class="stat-label">حقيقي قابل للتثبيت</div></div>
+      <div class="stat"><div class="stat-num">Cordova</div><div class="stat-label">تقنية موثوقة</div></div>
+    </div>
+  </section>
+
+  <div class="builder">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="goStep(1)" id="tab1">① معلومات التطبيق</button>
+      <button class="tab-btn" onclick="goStep(2)" id="tab2">② كود HTML</button>
+      <button class="tab-btn" onclick="goStep(3)" id="tab3">③ الإعدادات</button>
+      <button class="tab-btn" onclick="goStep(4)" id="tab4">④ البناء</button>
+    </div>
+
+    <div class="builder-body">
+
+      <!-- STEP 1 -->
+      <div class="step active" id="step1">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم التطبيق *</label>
+            <input type="text" id="app-name" placeholder="مثال: متجري الإلكتروني">
+          </div>
+          <div class="form-group">
+            <label>اسم الحزمة (Package Name) *</label>
+            <input type="text" id="package-name" placeholder="com.myapp.example">
+          </div>
+          <div class="form-group">
+            <label>الإصدار</label>
+            <input type="text" id="app-version" value="1.0.0">
+          </div>
+          <div class="form-group">
+            <label>الفئة</label>
+            <select id="app-category">
+              <option>أعمال وتجارة</option>
+              <option>تعليم</option>
+              <option>ترفيه</option>
+              <option>أخبار ومجلات</option>
+              <option>أدوات ومساعدة</option>
+              <option>رياضة</option>
+              <option>أخرى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>لون الشاشة الافتتاحية</label>
+            <div class="color-row">
+              <input type="color" id="splash-color" value="#0a0c10">
+              <input type="text" id="splash-color-text" value="#0a0c10" placeholder="#000000" style="flex:1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>لون شريط الحالة</label>
+            <div class="color-row">
+              <input type="color" id="status-color" value="#00e5ff">
+              <input type="text" id="status-color-text" value="#00e5ff" placeholder="#ffffff" style="flex:1">
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>وصف التطبيق</label>
+            <textarea id="app-desc" rows="3" placeholder="وصف مختصر لتطبيقك..."></textarea>
+          </div>
+
+          <!-- GitHub Token Section -->
+          <div class="form-group full">
+            <label>🔑 GitHub Token (مطلوب للبناء الحقيقي)</label>
+            <div class="token-box">
+              <div class="token-header">
+                <span class="token-icon">🐙</span>
+                <span class="token-title">ربط حساب GitHub</span>
+              </div>
+              <p class="token-desc">
+                التطبيق يستخدم GitHub Actions لبناء APK حقيقي في الخلفية.
+                أنشئ Token من
+                <a class="token-link" href="https://github.com/settings/tokens/new?scopes=repo,workflow,delete_repo&description=HTML2APK" target="_blank">إعدادات GitHub ← Tokens</a>
+                (فعّل صلاحيتَي <strong>repo</strong> و<strong>workflow</strong>). المستودع يُحذف تلقائياً بعد التحميل.
+              </p>
+              <div class="token-input-row">
+                <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                <button class="btn-verify" onclick="verifyToken()">تحقق ✓</button>
+              </div>
+              <div class="token-status" id="token-status"></div>
+            </div>
+          </div>
+        </div>
+        <div class="step-nav">
+          <span></span>
+          <button class="btn btn-primary" onclick="nextStep(1)">التالي — كود HTML ←</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step" id="step2">
+        <div class="editor-header">
+          <div class="editor-title">📄 ضع كود HTML الخاص بك هنا</div>
+          <div class="editor-actions">
+            <button class="btn-sm" onclick="loadSample()">تحميل مثال</button>
+            <button class="btn-sm" onclick="clearCode()">مسح</button>
+            <button class="btn-sm" onclick="updatePreview()">معاينة ←</button>
+          </div>
+        </div>
+        <div class="code-editor">
+          <div class="code-editor-bar">
+            <div class="dot dot-r"></div>
+            <div class="dot dot-y"></div>
+            <div class="dot dot-g"></div>
+            <span class="code-label">index.html</span>
+          </div>
+          <textarea id="html-input" spellcheck="false" placeholder="<!DOCTYPE html>&#10;<html>&#10;<head>&#10;  <meta charset=&quot;UTF-8&quot;>&#10;  <title>تطبيقي</title>&#10;</head>&#10;<body>&#10;  <h1>مرحباً بك!</h1>&#10;</body>&#10;</html>"></textarea>
+        </div>
+        <div class="preview-frame">
+          <div class="preview-bar">👁 معاينة مباشرة — <span style="color:var(--accent)">اضغط "معاينة" لتحديثها</span></div>
+          <iframe id="preview-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+        <div class="step-nav">
+          <button class="btn btn-outline" onclick="prevStep(2)">← السابق</button>
+          <button class="btn btn-primary" onclick="nextStep(2)">التالي — الإعدادات ←</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step" id="step3">
+        <div class="settings-grid">
+          <div class="form-group">
+            <label>اتجاه الشاشة</label>
+            <select id="orientation">
+              <option value="portrait">عمودي (Portrait)</option>
+              <option value="landscape">أفقي (Landscape)</option>
+              <option value="both">الاتجاهين</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الحد الأدنى لإصدار Android</label>
+            <select id="min-sdk">
+              <option value="21">Android 5.0 (API 21)</option>
+              <option value="23">Android 6.0 (API 23)</option>
+              <option value="26" selected>Android 8.0 (API 26)</option>
+              <option value="28">Android 9.0 (API 28)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>🌐 السماح بالوصول للإنترنت</strong><span>يتيح للتطبيق تحميل الروابط والمحتوى الخارجي</span></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')" id="t-internet"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>📍 إذن الموقع الجغرافي</strong><span>يطلب إذن الوصول لموقع المستخدم</span></div>
+            <div class="toggle" onclick="this.classList.toggle('on')" id="t-location"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>📷 إذن الكاميرا</strong><span>يتيح الوصول لكاميرا الجهاز</span></div>
+            <div class="toggle" onclick="this.classList.toggle('on')" id="t-camera"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>🔔 الإشعارات الفورية</strong><span>يتيح إرسال إشعارات Push للمستخدمين</span></div>
+            <div class="toggle" onclick="this.classList.toggle('on')" id="t-notif"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>📱 وضع ملء الشاشة</strong><span>يخفي شريط الحالة ويعرض التطبيق بكامل الشاشة</span></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')" id="t-fullscreen"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info"><strong>🔤 دعم اللغة العربية (RTL)</strong><span>يفعّل دعم الكتابة من اليمين لليسار</span></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')" id="t-rtl"></div>
+          </div>
+        </div>
+        <div class="step-nav">
+          <button class="btn btn-outline" onclick="prevStep(3)">← السابق</button>
+          <button class="btn btn-primary" onclick="nextStep(3)">التالي — البناء ←</button>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step" id="step4">
+        <div class="build-center">
+          <div class="build-icon">🚀</div>
+          <h2 style="font-size:1.5rem; margin-bottom:8px;">جاهز للبناء الحقيقي!</h2>
+          <p style="color:var(--text-muted); font-size:0.9rem;">سيُبنى APK على GitHub Actions ويصلك رابط التحميل مباشرة (2-5 دقائق)</p>
+        </div>
+
+        <div class="build-summary" id="summary-box">
+          <div class="summary-row"><span class="summary-key">اسم التطبيق</span><span class="summary-val" id="s-name">—</span></div>
+          <div class="summary-row"><span class="summary-key">الحزمة</span><span class="summary-val" id="s-pkg">—</span></div>
+          <div class="summary-row"><span class="summary-key">الإصدار</span><span class="summary-val" id="s-ver">—</span></div>
+          <div class="summary-row"><span class="summary-key">الاتجاه</span><span class="summary-val" id="s-orient">—</span></div>
+          <div class="summary-row"><span class="summary-key">أدنى Android</span><span class="summary-val" id="s-sdk">—</span></div>
+          <div class="summary-row"><span class="summary-key">حجم الكود</span><span class="summary-val" id="s-size">—</span></div>
+          <div class="summary-row"><span class="summary-key">GitHub</span><span class="summary-val" id="s-github">—</span></div>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-label">
+            <span id="progress-text">جارٍ التحضير...</span>
+            <span id="progress-pct">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-steps" id="prog-steps">
+            <div class="prog-step" id="ps1"><div class="prog-dot">1</div>التحقق من GitHub Token</div>
+            <div class="prog-step" id="ps2"><div class="prog-dot">2</div>إنشاء مستودع المشروع</div>
+            <div class="prog-step" id="ps3"><div class="prog-dot">3</div>رفع الكود والإعدادات</div>
+            <div class="prog-step" id="ps4"><div class="prog-dot">4</div>بناء APK عبر GitHub Actions</div>
+            <div class="prog-step" id="ps5"><div class="prog-dot">5</div>تجهيز رابط التحميل</div>
+          </div>
+          <div class="build-log" id="build-log"></div>
+        </div>
+
+        <div class="download-card" id="download-card">
+          <div style="font-size:2.5rem; margin-bottom:12px;">✅</div>
+          <h3>تم البناء بنجاح!</h3>
+          <p>ملف APK جاهز للتحميل والتثبيت على أي جهاز Android</p>
+          <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-success" onclick="downloadAPK()">⬇ تحميل APK</button>
+            <button class="btn btn-outline" onclick="resetBuilder()">🔄 بناء تطبيق جديد</button>
+          </div>
+          <a class="repo-link" id="repo-link" href="#" target="_blank">🐙 عرض المستودع على GitHub</a>
+        </div>
+
+        <div class="step-nav" id="build-nav">
+          <button class="btn btn-outline" onclick="prevStep(4)">← السابق</button>
+          <button class="btn btn-build" id="build-btn" onclick="startBuild()">⚡ ابنِ APK الآن</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <section class="how">
+    <div class="section-title">كيف يعمل؟</div>
+    <p class="section-sub">أربع خطوات بسيطة — بناء حقيقي في الخلفية</p>
+    <div class="steps-row">
+      <div class="how-step"><div class="how-num">📝</div><h4>أدخل المعلومات</h4><p>اسم التطبيق، الحزمة، وـ GitHub Token</p></div>
+      <div class="how-step"><div class="how-num">💻</div><h4>الصق كودك</h4><p>HTML كامل مع CSS وJS</p></div>
+      <div class="how-step"><div class="how-num">⚙️</div><h4>اضبط الإعدادات</h4><p>الأذونات والاتجاه والمظهر</p></div>
+      <div class="how-step"><div class="how-num">📦</div><h4>حمّل APK</h4><p>رابط تحميل مباشر من GitHub</p></div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="section-title">لماذا HTML2APK؟</div>
+    <p class="section-sub">بناء حقيقي، مجاني، وخصوصية كاملة</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,229,255,0.1); color:var(--accent)">⚡</div>
+        <h3>APK حقيقي قابل للتثبيت</h3>
+        <p>يُبنى بـ Cordova على GitHub Actions — ليس مجرد محاكاة</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(124,58,237,0.1); color:var(--accent2)">🆓</div>
+        <h3>مجاني تماماً</h3>
+        <p>GitHub Actions يوفر 2000 دقيقة/شهر مجاناً — أكثر من كافٍ</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.1); color:var(--accent3)">🔒</div>
+        <h3>خصوصية كاملة</h3>
+        <p>المستودع يُحذف تلقائياً بعد التحميل — لا شيء يُخزّن</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,229,255,0.1); color:var(--accent)">📱</div>
+        <h3>دعم كامل للعربية</h3>
+        <p>RTL مدعوم بشكل احترافي من اليوم الأول</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(124,58,237,0.1); color:var(--accent2)">🎨</div>
+        <h3>تخصيص كامل</h3>
+        <p>الألوان والأذونات والاتجاه والحد الأدنى لـ Android</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.1); color:var(--accent3)">📦</div>
+        <h3>قابل للنشر على Play</h3>
+        <p>ملف debug APK جاهز — وقريباً دعم APK موقّع</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <p>HTML2APK © 2025 — حوّل أفكارك إلى تطبيقات حقيقية</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────
+  let currentStep = 1;
+  let verifiedUsername = null;
+  let builtRepoName = null;
+  let apkDownloadUrl = null;
+
+  // ─── NAVIGATION ──────────────────────────────────────────
+  function goStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('step' + n).classList.add('active');
+    document.getElementById('tab' + n).classList.add('active');
+    currentStep = n;
+    if (n === 4) fillSummary();
+  }
+
+  function nextStep(n) {
+    if (n === 1) {
+      if (!document.getElementById('app-name').value.trim()) { showToast('⚠ أدخل اسم التطبيق أولاً', 'error'); return; }
+      const pkg = document.getElementById('package-name').value.trim();
+      if (!pkg) { showToast('⚠ أدخل اسم الحزمة أولاً', 'error'); return; }
+      if (!/^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(pkg)) {
+        showToast('⚠ صيغة الحزمة خاطئة — مثال: com.myapp.example', 'error'); return;
+      }
+      if (!document.getElementById('github-token').value.trim()) {
+        showToast('⚠ أدخل GitHub Token أولاً', 'error'); return;
+      }
+    }
+    if (n === 2) {
+      if (!document.getElementById('html-input').value.trim()) { showToast('⚠ أدخل كود HTML أولاً', 'error'); return; }
+    }
+    goStep(n + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function prevStep(n) { goStep(n - 1); }
+
+  // ─── SUMMARY ─────────────────────────────────────────────
+  function fillSummary() {
+    const code = document.getElementById('html-input').value;
+    document.getElementById('s-name').textContent = document.getElementById('app-name').value || '—';
+    document.getElementById('s-pkg').textContent = document.getElementById('package-name').value || '—';
+    document.getElementById('s-ver').textContent = document.getElementById('app-version').value || '1.0.0';
+    const orient = document.getElementById('orientation').value;
+    document.getElementById('s-orient').textContent = orient === 'portrait' ? 'عمودي' : orient === 'landscape' ? 'أفقي' : 'الاتجاهين';
+    document.getElementById('s-sdk').textContent = 'API ' + document.getElementById('min-sdk').value;
+    document.getElementById('s-size').textContent = (new Blob([code]).size / 1024).toFixed(1) + ' KB';
+    document.getElementById('s-github').textContent = verifiedUsername ? '@' + verifiedUsername : 'لم يتم التحقق بعد';
+  }
+
+  // ─── EDITOR ──────────────────────────────────────────────
+  function loadSample() {
+    document.getElementById('html-input').value = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيقي</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0a0c10, #1a1f2e);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 320px;
+    }
+    h1 { font-size: 2rem; margin-bottom: 12px; color: #00e5ff; }
+    p { color: #9ca3af; line-height: 1.6; }
+    button {
+      margin-top: 24px;
+      background: linear-gradient(135deg, #7c3aed, #00e5ff);
+      border: none;
+      padding: 12px 28px;
+      border-radius: 50px;
+      color: black;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>مرحباً! 👋</h1>
+    <p>هذا تطبيقي الأول المصنوع بـ HTML2APK</p>
+    <button onclick="alert('يعمل بشكل مثالي! ✅')">اضغط هنا</button>
+  </div>
+</body>
+</html>`;
+    updatePreview();
+    showToast('✅ تم تحميل المثال', 'success');
+  }
+
+  function clearCode() {
+    document.getElementById('html-input').value = '';
+    document.getElementById('preview-iframe').srcdoc = '';
+  }
+
+  function updatePreview() {
+    const code = document.getElementById('html-input').value;
+    if (!code.trim()) { showToast('⚠ الكود فارغ', 'error'); return; }
+    document.getElementById('preview-iframe').srcdoc = code;
+    showToast('✅ تم تحديث المعاينة', 'success');
+  }
+
+  // Sync color inputs
+  document.getElementById('splash-color').addEventListener('input', function() {
+    document.getElementById('splash-color-text').value = this.value;
+  });
+  document.getElementById('splash-color-text').addEventListener('input', function() {
+    if (/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('splash-color').value = this.value;
+  });
+  document.getElementById('status-color').addEventListener('input', function() {
+    document.getElementById('status-color-text').value = this.value;
+  });
+  document.getElementById('status-color-text').addEventListener('input', function() {
+    if (/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('status-color').value = this.value;
+  });
+
+  // ─── GITHUB TOKEN VERIFY ─────────────────────────────────
+  async function verifyToken() {
+    const token = document.getElementById('github-token').value.trim();
+    const statusEl = document.getElementById('token-status');
+    if (!token) { showToast('⚠ أدخل Token أولاً', 'error'); return; }
+    statusEl.className = 'token-status';
+    statusEl.style.display = 'flex';
+    statusEl.textContent = '⏳ جارٍ التحقق...';
+    try {
+      const res = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': 'token ' + token }
+      });
+      if (!res.ok) throw new Error('Token غير صالح');
+      const user = await res.json();
+      verifiedUsername = user.login;
+      // ✅ FIX: Check for workflow scope in response headers
+      const scopes = res.headers.get('x-oauth-scopes') || '';
+      if (!scopes.includes('workflow') && !scopes.includes('repo')) {
+        statusEl.className = 'token-status fail';
+        statusEl.textContent = '⚠ Token يفتقر لصلاحية workflow — أعد إنشاءه مع تفعيل repo + workflow';
+        showToast('⚠ Token ناقص الصلاحيات', 'error');
+        return;
+      }
+      statusEl.className = 'token-status ok';
+      statusEl.textContent = '✅ تم التحقق — مرحباً @' + user.login + ' | صلاحيات: ' + scopes;
+      showToast('✅ Token صالح', 'success');
+    } catch (e) {
+      verifiedUsername = null;
+      statusEl.className = 'token-status fail';
+      statusEl.textContent = '❌ Token غير صالح — تأكد من الصلاحيات';
+      showToast('❌ Token غير صالح', 'error');
+    }
+  }
+
+  // ─── GITHUB HELPERS ──────────────────────────────────────
+  function toBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  async function ghFetch(url, options, token) {
+    const res = await fetch('https://api.github.com' + url, {
+      ...options,
+      headers: {
+        'Authorization': 'token ' + token,
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
+    });
+    return res;
+  }
+
+  async function createFile(token, username, repo, path, content) {
+    const res = await ghFetch(
+      '/repos/' + username + '/' + repo + '/contents/' + path,
+      { method: 'PUT', body: JSON.stringify({ message: 'Add ' + path, content: toBase64(content) }) },
+      token
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error('فشل رفع ' + path + ': ' + err.message);
+    }
+    return res.json();
+  }
+
+  // ✅ FIX 1: waitForRepo — انتظر حتى يصبح الـ branch جاهزاً فعلاً
+  async function waitForRepo(token, username, repo) {
+    for (let i = 0; i < 20; i++) {
+      try {
+        const res = await ghFetch(
+          '/repos/' + username + '/' + repo + '/branches',
+          { method: 'GET' },
+          token
+        );
+        if (res.ok) {
+          const branches = await res.json();
+          if (Array.isArray(branches) && branches.length > 0) {
+            addLog('Repo ready! Default branch: ' + branches[0].name, 'ok');
+            return true;
+          }
+        }
+      } catch(e) { /* ignore, keep retrying */ }
+      addLog('Waiting for repo initialization... (' + (i + 1) + '/20)', 'info');
+      await delay(4000);
+    }
+    throw new Error('انتهت مهلة انتظار تهيئة المستودع — حاول مجدداً');
+  }
+
+  // ✅ FIX 2: createFileWithRetry — 6 محاولات، 6 ثوانٍ بين كل محاولة
+  async function createFileWithRetry(token, username, repo, path, content) {
+    const retries = 6;
+    for (let i = 0; i < retries; i++) {
+      try {
+        await createFile(token, username, repo, path, content);
+        return;
+      } catch (e) {
+        if (i < retries - 1) {
+          addLog('Retry ' + (i + 1) + '/' + (retries - 1) + ' for ' + path + '...', 'info');
+          await delay(6000);
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+
+  // ─── CONTENT GENERATORS ──────────────────────────────────
+  function generateConfigXml() {
+    const name    = document.getElementById('app-name').value;
+    const pkg     = document.getElementById('package-name').value;
+    const version = document.getElementById('app-version').value || '1.0.0';
+    const minSdk  = document.getElementById('min-sdk').value;
+    const orient  = document.getElementById('orientation').value;
+    const full    = document.getElementById('t-fullscreen').classList.contains('on');
+    const rtl     = document.getElementById('t-rtl').classList.contains('on');
+    const internet= document.getElementById('t-internet').classList.contains('on');
+    const location= document.getElementById('t-location').classList.contains('on');
+    const camera  = document.getElementById('t-camera').classList.contains('on');
+
+    let perms = '';
+    if (internet) perms += '\n    <allow-intent href="http://*/*" />\n    <allow-intent href="https://*/*" />';
+    if (location) perms += '\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />';
+    if (camera)   perms += '\n    <uses-permission android:name="android.permission.CAMERA" />';
+
+    return '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n' +
+      '<widget id="' + pkg + '" version="' + version + '" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">\n' +
+      '    <name>' + name + '</name>\n' +
+      '    <description>Built with HTML2APK</description>\n' +
+      '    <author email="dev@html2apk.com" href="https://html2apk.com">HTML2APK</author>\n' +
+      '    <content src="index.html" />\n' +
+      '    <access origin="*" />' + perms + '\n' +
+      '    <preference name="android-minSdkVersion" value="' + minSdk + '" />\n' +
+      '    <preference name="android-targetSdkVersion" value="33" />\n' +
+      '    <preference name="Orientation" value="' + orient + '" />\n' +
+      '    <preference name="Fullscreen" value="' + full + '" />\n' +
+      (rtl ? '    <preference name="android-manifest-debuggable" value="true" />\n' : '') +
+      '</widget>';
+  }
+
+  function generatePackageJson() {
+    const name = (document.getElementById('app-name').value || 'myapp')
+      .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return JSON.stringify({ name: name || 'myapp', version: '1.0.0', dependencies: {} }, null, 2);
+  }
+
+  function generateWorkflow() {
+    const GHA_OPEN  = '${{ ';
+    const GHA_CLOSE = ' }}';
+    return [
+      'name: Build APK',
+      'on: [push]',
+      'permissions:',
+      '  contents: write',
+      'jobs:',
+      '  build:',
+      '    runs-on: ubuntu-latest',
+      '    steps:',
+      '      - uses: actions/checkout@v3',
+      '',
+      '      - name: Setup Java 17',
+      '        uses: actions/setup-java@v3',
+      '        with:',
+      "          java-version: '17'",
+      "          distribution: 'temurin'",
+      '',
+      '      - name: Setup Android SDK',
+      '        uses: android-actions/setup-android@v2',
+      '',
+      '      - name: Accept Android Licenses',
+      '        run: yes | sdkmanager --licenses || true',
+      '',
+      '      - name: Install Cordova',
+      '        run: npm install -g cordova',
+      '',
+      '      - name: Add Android Platform',
+      '        run: cordova platform add android',
+      '',
+      '      - name: Build APK',
+      '        run: cordova build android --debug',
+      '',
+      '      - name: Upload Release',
+      '        uses: softprops/action-gh-release@v1',
+      '        with:',
+      "          tag_name: \"v1." + GHA_OPEN + "github.run_number" + GHA_CLOSE + ".0\"",
+      '          name: "App Build"',
+      '          files: platforms/android/app/build/outputs/apk/debug/app-debug.apk',
+      '        env:',
+      '          GITHUB_TOKEN: ' + GHA_OPEN + 'secrets.GITHUB_TOKEN' + GHA_CLOSE
+    ].join('\n');
+  }
+
+  // ─── LOG HELPER ──────────────────────────────────────────
+  function addLog(msg, type) {
+    const log = document.getElementById('build-log');
+    log.style.display = 'block';
+    const line = document.createElement('div');
+    line.className = type ? 'log-' + type : '';
+    line.textContent = '› ' + msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ─── PROGRESS HELPERS ────────────────────────────────────
+  function setStepState(id, state) {
+    const el = document.getElementById(id);
+    el.className = 'prog-step ' + state;
+    if (state === 'done') el.querySelector('.prog-dot').textContent = '✓';
+  }
+
+  function setProgress(pct, text) {
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-text').textContent = text;
+  }
+
+  // ─── MAIN BUILD ──────────────────────────────────────────
+  async function startBuild() {
+    const token = document.getElementById('github-token').value.trim();
+    const name  = document.getElementById('app-name').value.trim();
+    const html  = document.getElementById('html-input').value.trim();
+
+    if (!token) { showToast('⚠ أدخل GitHub Token في الخطوة الأولى', 'error'); return; }
+    if (!name)  { showToast('⚠ أدخل اسم التطبيق', 'error'); return; }
+    if (!html)  { showToast('⚠ أدخل كود HTML', 'error'); return; }
+
+    // Reset UI
+    document.getElementById('build-btn').disabled = true;
+    document.getElementById('build-nav').querySelector('.btn-outline').disabled = true;
+    document.getElementById('progress-wrap').style.display = 'block';
+    document.getElementById('download-card').style.display = 'none';
+    document.getElementById('build-log').innerHTML = '';
+    document.getElementById('build-log').style.display = 'none';
+    ['ps1','ps2','ps3','ps4','ps5'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'prog-step';
+      el.querySelector('.prog-dot').textContent = el.id.replace('ps','');
+    });
+
+    try {
+      // ── Step 1: Verify token ──────────────────────────
+      setStepState('ps1', 'active');
+      setProgress(8, 'التحقق من GitHub Token...');
+      addLog('Verifying token...', 'info');
+
+      const userRes = await ghFetch('/user', { method: 'GET' }, token);
+      if (!userRes.ok) throw new Error('GitHub Token غير صالح أو منتهي الصلاحية');
+      const user = await userRes.json();
+      const username = user.login;
+      verifiedUsername = username;
+
+      // ✅ FIX 3: التحقق من صلاحية workflow في الـ header
+      const scopes = userRes.headers.get('x-oauth-scopes') || '';
+      addLog('Scopes: ' + (scopes || 'none detected'), 'info');
+      if (!scopes.includes('workflow') && !scopes.includes('repo')) {
+        throw new Error('Token يفتقر لصلاحية workflow — أعد إنشاءه مع تفعيل repo + workflow');
+      }
+
+      addLog('Authenticated as @' + username, 'ok');
+      setStepState('ps1', 'done');
+
+      // ── Step 2: Create repo ───────────────────────────
+      setStepState('ps2', 'active');
+      setProgress(20, 'إنشاء مستودع المشروع...');
+      const repoName = 'html2apk-' + Date.now();
+      addLog('Creating repo: ' + repoName, 'info');
+
+      const repoRes = await ghFetch('/user/repos', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: repoName,
+          private: false,
+          auto_init: true,
+          description: 'Built with HTML2APK'
+        })
+      }, token);
+      if (!repoRes.ok) {
+        const err = await repoRes.json();
+        throw new Error('فشل إنشاء المستودع: ' + err.message);
+      }
+      builtRepoName = repoName;
+      addLog('Repo created: github.com/' + username + '/' + repoName, 'ok');
+
+      // ✅ FIX 4: استبدال delay(5000) بـ waitForRepo الذكية
+      await waitForRepo(token, username, repoName);
+      setStepState('ps2', 'done');
+
+      // ── Step 3: Upload files ──────────────────────────
+      setStepState('ps3', 'active');
+
+      setProgress(36, 'رفع كود HTML...');
+      addLog('Uploading www/index.html...', 'info');
+      await createFileWithRetry(token, username, repoName, 'www/index.html', html);
+      // ✅ FIX 5: تقليل التأخير بين الملفات من 1500 إلى 800ms
+      await delay(800);
+
+      setProgress(40, 'رفع config.xml...');
+      addLog('Uploading config.xml...', 'info');
+      await createFileWithRetry(token, username, repoName, 'config.xml', generateConfigXml());
+      await delay(800);
+
+      setProgress(44, 'رفع package.json...');
+      addLog('Uploading package.json...', 'info');
+      await createFileWithRetry(token, username, repoName, 'package.json', generatePackageJson());
+      await delay(800);
+
+      setProgress(48, 'رفع workflow — سيبدأ البناء...');
+      addLog('Uploading workflow (this triggers the build)...', 'info');
+      await createFileWithRetry(token, username, repoName, '.github/workflows/build.yml', generateWorkflow());
+      addLog('All files uploaded — GitHub Actions started!', 'ok');
+      setStepState('ps3', 'done');
+
+      // ── Step 4: Poll for workflow ─────────────────────
+      setStepState('ps4', 'active');
+      setProgress(55, 'انتظر بدء GitHub Actions...');
+      addLog('Waiting for workflow to start...', 'info');
+
+      await delay(10000);
+
+      let runId = null;
+      let pollAttempts = 0;
+      while (!runId && pollAttempts < 20) {
+        const runsRes = await ghFetch('/repos/' + username + '/' + repoName + '/actions/runs', { method: 'GET' }, token);
+        if (runsRes.ok) {
+          const runs = await runsRes.json();
+          if (runs.workflow_runs && runs.workflow_runs.length > 0) {
+            runId = runs.workflow_runs[0].id;
+          }
+        }
+        if (!runId) {
+          addLog('Waiting for workflow run... (' + (pollAttempts + 1) + '/20)', 'info');
+          await delay(6000);
+          pollAttempts++;
+        }
+      }
+      if (!runId) throw new Error('لم يبدأ الـ Workflow — تأكد أن Token يملك صلاحيتَي repo + workflow');
+      addLog('Workflow started! Run ID: ' + runId, 'ok');
+
+      // Poll until complete
+      let status = 'queued';
+      let conclusion = null;
+      let elapsed = 0;
+      while (status !== 'completed' && elapsed < 45) {
+        await delay(12000);
+        elapsed++;
+        const runRes = await ghFetch('/repos/' + username + '/' + repoName + '/actions/runs/' + runId, { method: 'GET' }, token);
+        if (runRes.ok) {
+          const run = await runRes.json();
+          status = run.status;
+          conclusion = run.conclusion;
+        }
+        const mins = Math.floor(elapsed * 12 / 60);
+        const secs = (elapsed * 12) % 60;
+        const pct = Math.min(88, 55 + elapsed * 0.75);
+        setProgress(pct, 'بناء APK... (' + mins + ':' + String(secs).padStart(2,'0') + ' مضت)');
+        addLog('Status: ' + status + (conclusion ? ' / ' + conclusion : ''), status === 'completed' ? (conclusion === 'success' ? 'ok' : 'err') : 'info');
+        if (status === 'completed') break;
+      }
+
+      if (conclusion !== 'success') {
+        const logUrl = 'https://github.com/' + username + '/' + repoName + '/actions/runs/' + runId;
+        throw new Error('فشل البناء — تحقق من الـ Logs: ' + logUrl);
+      }
+      setStepState('ps4', 'done');
+
+      // ── Step 5: Get release download URL ─────────────
+      setStepState('ps5', 'active');
+      setProgress(95, 'جارٍ الحصول على رابط التحميل...');
+      addLog('Fetching release download URL...', 'info');
+
+      await delay(5000);
+
+      const releaseRes = await ghFetch('/repos/' + username + '/' + repoName + '/releases/latest', { method: 'GET' }, token);
+      if (!releaseRes.ok) throw new Error('لم يُعثر على الـ Release — حاول مجدداً');
+      const release = await releaseRes.json();
+      const apkAsset = release.assets && release.assets.find(a => a.name.endsWith('.apk'));
+      if (!apkAsset) throw new Error('لم يُعثر على ملف APK في الـ Release');
+
+      apkDownloadUrl = apkAsset.browser_download_url;
+      addLog('APK ready: ' + apkAsset.name + ' (' + (apkAsset.size / 1024 / 1024).toFixed(1) + ' MB)', 'ok');
+      setStepState('ps5', 'done');
+      setProgress(100, 'اكتمل البناء!');
+
+      // ── Show download card ────────────────────────────
+      document.getElementById('progress-wrap').style.display = 'none';
+      document.getElementById('download-card').style.display = 'block';
+      document.getElementById('build-nav').style.display = 'none';
+      document.getElementById('repo-link').href = 'https://github.com/' + username + '/' + repoName;
+      showToast('🎉 تم بناء APK بنجاح!', 'success');
+
+    } catch (err) {
+      addLog('ERROR: ' + err.message, 'err');
+      showToast('❌ ' + err.message, 'error');
+      document.getElementById('build-btn').disabled = false;
+      document.getElementById('build-nav').querySelector('.btn-outline').disabled = false;
+    }
+  }
+
+  // ─── DOWNLOAD ────────────────────────────────────────────
+  function downloadAPK() {
+    if (apkDownloadUrl) {
+      window.open(apkDownloadUrl, '_blank');
+    } else {
+      showToast('⚠ رابط التحميل غير جاهز', 'error');
+    }
+  }
+
+  function resetBuilder() { location.reload(); }
+
+  // ─── UTILS ───────────────────────────────────────────────
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || '') + ' show';
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+</script>
+</body>
+</html>
